@@ -45,8 +45,15 @@ function reindentCurrentLine(editor: vscode.TextEditor) {
     // if (numLines === 1) {
     //     editor.selection = new vscode.Selection(position.with(position.line, 0), position.with(position.line, 0));        
     // }
+    //
     // reindentselectedlines does not work in some documents
-    // formatDocument works in every case I tried (c, cpp, js, ts, json)
+    //
+    // formatDocument works in every case I tried (js, ts, json)
+    // but its dangerous.  If you use it in a cpp file that is K&R and you
+    // have the default settings for clang-format it will reformat the code
+    // to Allman style (not just the current line). So long as you have the 
+    // correct settings in your indentation settings and the file you are
+    // editing matches that style, then this approach works.
     vscode.commands.executeCommand('editor.action.formatDocument').then(val => {
         editor.selection = new vscode.Selection(position, position);
         let offset = currentLine.length - position.character; // position from right
@@ -56,8 +63,14 @@ function reindentCurrentLine(editor: vscode.TextEditor) {
         } else {
             currentLine = getCurrentLine(editor);
             offset = currentLine.length - currentLine.trim().length; // indent size
-            position = position.with(position.line, offset - 1);
+            if (offset > 1) {
+                position = position.with(position.line, offset - 1);
+                editor.selection = new vscode.Selection(position, position);
+            }
+            else {
+                // an empty line
+                vscode.commands.executeCommand('editor.action.indentLines');
+            }
         }
-        editor.selection = new vscode.Selection(position, position);
     });
 }

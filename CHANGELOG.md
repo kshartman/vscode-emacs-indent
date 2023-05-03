@@ -1,6 +1,6 @@
 # Change Log
 
-All notable changes to the "vscode-emacs-indent-v2" extension will be documented in this file.
+All notable changes to the "emacs-tab" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
@@ -20,5 +20,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 	- Proper case command name
 	- Improved documentation (README.md)
 	- Change keybinding when expression so that it does not interfere with completion
+
+## [0.0.13] - 2023-05-02 - kshartman
+    
+	- Found branch from original author that works. Use it.
+	- add ability to specify languages where this should work.
+	- renamed command scope tab-emacs
 
 	

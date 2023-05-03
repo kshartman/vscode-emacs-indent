@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) Shane Hartman. All rights reserved.
+Copyright (c) Shuji Sakagami, Shane Hartman. All rights reserved.
 
 Based on the work of Shuji Sakagami which did not specify a license.
 

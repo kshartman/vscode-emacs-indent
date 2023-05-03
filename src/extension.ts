@@ -1,14 +1,32 @@
 'use strict';
 import * as vscode from 'vscode';
 
+let validLanguages: Array<string> = [];
+
+function getConfiguration(context: vscode.ExtensionContext) {
+    const configuration = vscode.workspace.getConfiguration("tab-emacs");
+
+    validLanguages = configuration.get<Array<string>>("validLanguages") || [];
+    
+    // Dispose current settings.
+    for (const element of context.subscriptions) {
+        element.dispose();
+    }
+    return validLanguages;
+}
+
 export function activate(context: vscode.ExtensionContext) {
-    const disposable = vscode.commands.registerTextEditorCommand('emacs-indent.reindentCurrentLine-v2', () => {
+    getConfiguration(context);
+    const disposable = vscode.commands.registerTextEditorCommand('tab-emacs.reindentLines', () => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             vscode.window.showInformationMessage('No editor');
             return;
         }
-        if (editor.document.languageId === 'plaintext') {
+        if ((editor.document.languageId === 'plaintext')
+            || (validLanguages
+                && (validLanguages.length > 0)
+                && (validLanguages.indexOf(editor.document.languageId) === -1))) {
             vscode.commands.executeCommand('editor.action.indentLines');
         } else {
             reindentCurrentLine(editor);
@@ -28,33 +46,18 @@ function getCurrentLine(editor: vscode.TextEditor): string {
     return editor.document.getText(range);
 }
 
-// function getLineCount(editor: vscode.TextEditor): number {
-//     const range = editor.selection;
-//     const beg = range.start.line;
-//     const end = range.end.line;
-//     if (end < beg) {
-//         return beg - end + 1;
-//     }
-//     return end - beg + 1;
-//}
-
 function reindentCurrentLine(editor: vscode.TextEditor) {
     let position = editor.selection.active;
     let currentLine = getCurrentLine(editor);
-    // const numLines = getLineCount(editor);
-    // if (numLines === 1) {
-    //     editor.selection = new vscode.Selection(position.with(position.line, 0), position.with(position.line, 0));        
-    // }
-    //
-    // reindentselectedlines does not work in some documents
-    //
-    // formatDocument works in every case I tried (js, ts, json)
-    // but its dangerous.  If you use it in a cpp file that is K&R and you
-    // have the default settings for clang-format it will reformat the code
-    // to Allman style (not just the current line). So long as you have the 
-    // correct settings in your indentation settings and the file you are
-    // editing matches that style, then this approach works.
-    vscode.commands.executeCommand('editor.action.formatDocument').then(val => {
+
+    if (position.line > 0 && editor.document.lineAt(position.line - 1).isEmptyOrWhitespace) {
+        let s = position.line - 1;
+        while (editor.document.lineAt(s).isEmptyOrWhitespace) {
+            --s;
+        }
+        editor.selection = new vscode.Selection(position.with(s, 0), position.with(position.line + 1, 0));
+    }
+    vscode.commands.executeCommand('editor.action.reindentselectedlines').then(val => {
         editor.selection = new vscode.Selection(position, position);
         let offset = currentLine.length - position.character; // position from right
         if (offset < currentLine.trimLeft().length) {
@@ -63,14 +66,8 @@ function reindentCurrentLine(editor: vscode.TextEditor) {
         } else {
             currentLine = getCurrentLine(editor);
             offset = currentLine.length - currentLine.trim().length; // indent size
-            if (offset > 1) {
-                position = position.with(position.line, offset - 1);
-                editor.selection = new vscode.Selection(position, position);
-            }
-            else {
-                // an empty line
-                vscode.commands.executeCommand('editor.action.indentLines');
-            }
+            position = position.with(position.line, offset - 1);
         }
+        editor.selection = new vscode.Selection(position, position);
     });
 }
